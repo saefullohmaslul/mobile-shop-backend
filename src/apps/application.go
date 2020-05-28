@@ -24,4 +24,5 @@ func configureEndpoint(r *gin.Engine) {
 	g := r.Group("/api/v1")
 
 	routes.Router(g)
+	routes.NoRoute(r)
 }

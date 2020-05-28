@@ -2,6 +2,8 @@ package apps
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jpoles1/gopherbadger/logging"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/db"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/routes"
 )
 
@@ -18,6 +20,7 @@ func NewApplication(route *gin.Engine) *Application {
 // Create is method to create server application
 func (a Application) Create() {
 	configureEndpoint(a.Route)
+	configureDB()
 }
 
 func configureEndpoint(r *gin.Engine) {
@@ -25,4 +28,11 @@ func configureEndpoint(r *gin.Engine) {
 
 	routes.Router(g)
 	routes.NoRoute(r)
+}
+
+func configureDB() {
+	_, err := db.NewDB()
+	if err != nil {
+		logging.Error("DB", err)
+	}
 }

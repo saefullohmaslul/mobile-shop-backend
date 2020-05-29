@@ -10,7 +10,8 @@ CREATE TABLE users
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   deleted_at TIMESTAMP,
-  CONSTRAINT UC_User UNIQUE (id, username, email)
+  CONSTRAINT username_unique UNIQUE (username),
+  CONSTRAINT email_unique UNIQUE (email)
 );
 
 -- +migrate Down

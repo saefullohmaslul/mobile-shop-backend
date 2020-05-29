@@ -1,0 +1,5 @@
+development:
+  dialect: postgres
+  datasource: host=localhost dbname=shop_db user=postgres password=developer sslmode=disable
+  dir: src/db/migrations
+  table: migrations

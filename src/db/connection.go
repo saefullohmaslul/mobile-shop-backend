@@ -20,11 +20,18 @@ func NewDB() (*DB, error) {
 		logging.Error("ENV", err)
 	}
 
-	authDB := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=require password=%s",
+	ssl := "disable"
+	env := os.Getenv("ENV")
+	if env == "production" {
+		ssl = "require"
+	}
+
+	authDB := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=%s password=%s",
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_NAME"),
+		ssl,
 		os.Getenv("DB_PASS"),
 	)
 

@@ -26,7 +26,8 @@ func (a Application) Create() {
 func configureEndpoint(r *gin.Engine) {
 	g := r.Group("/api/v1")
 
-	routes.Router(g)
+	routes.HealthRouter(g)
+	routes.AuthRouter(g)
 	routes.NoRoute(r)
 }
 

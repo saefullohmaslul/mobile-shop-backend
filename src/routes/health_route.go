@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Router is method to initialize router
-func Router(g *gin.RouterGroup) {
+// HealthRouter is method to initialize health checking
+func HealthRouter(g *gin.RouterGroup) {
 	{
 		g.GET("/health", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{

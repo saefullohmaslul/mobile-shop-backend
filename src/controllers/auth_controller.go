@@ -1,26 +1,31 @@
 package controllers
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/response"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/db/entity"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/services"
 )
 
 // AuthController is controller to handle authentication
 type AuthController struct {
+	Service services.AuthService
 }
 
 // NewAuthController is constructor to create auth controller instance
-func NewAuthController() *AuthController {
-	return &AuthController{}
+func NewAuthController(authService *services.AuthService) *AuthController {
+	return &AuthController{
+		Service: *authService,
+	}
 }
 
 // Register is controller to handle registration proccess
 func (ctl *AuthController) Register(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Success register user",
-		"data":    "Success",
-		"errors":  nil,
-	})
+	var user entity.User
+	_ = c.ShouldBindBodyWith(&user, binding.JSON)
+
+	token := ctl.Service.Register(user)
+
+	response.Success(c, "Success register user", token)
 }

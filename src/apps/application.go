@@ -2,7 +2,7 @@ package apps
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jpoles1/gopherbadger/logging"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/response"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/routes"
 )
@@ -19,8 +19,9 @@ func NewApplication(route *gin.Engine) *Application {
 
 // Create is method to create server application
 func (a Application) Create() {
-	configureEndpoint(a.Route)
+	a.Route.Use(response.Recovery(response.ErrorHandler))
 	configureDB()
+	configureEndpoint(a.Route)
 }
 
 func configureEndpoint(r *gin.Engine) {
@@ -34,6 +35,11 @@ func configureEndpoint(r *gin.Engine) {
 func configureDB() {
 	_, err := db.NewDB()
 	if err != nil {
-		logging.Error("DB", err)
+		var errors []response.Error
+		errors = append(errors, response.Error{
+			Flag:    "DATABASE_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Database connection error", errors)
 	}
 }

@@ -9,13 +9,15 @@ import (
 	"github.com/jpoles1/gopherbadger/logging"
 )
 
+// Conn is connection session
+var Conn *gorm.DB
+
 // DB is struct for database instance
 type DB struct {
-	Conn *gorm.DB
 }
 
 // NewDB is constructor to create db instance
-func NewDB() (*DB, error) {
+func NewDB() (bool, error) {
 	if err := godotenv.Load(); err != nil {
 		logging.Error("ENV", err)
 	}
@@ -37,14 +39,24 @@ func NewDB() (*DB, error) {
 
 	conn, err := gorm.Open("postgres", authDB)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
+	conn.DB().SetMaxIdleConns(100)
 
 	logging.Success("Success to connect database")
-	return &DB{Conn: conn}, nil
+
+	db := DB{}
+	db.SetConn(conn)
+
+	return true, nil
+}
+
+// SetConn is method to deliver connection in struct
+func (d DB) SetConn(conn *gorm.DB) {
+	Conn = conn
 }
 
 // Get is method to get connection
 func (d DB) Get() *gorm.DB {
-	return d.Conn
+	return Conn
 }

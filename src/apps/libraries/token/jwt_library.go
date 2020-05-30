@@ -14,7 +14,7 @@ type Claims struct {
 }
 
 // SignJWT is method to sign jwt with asymetric
-func SignJWT(payload interface{}) (string, error) {
+func SignJWT(payload interface{}) (string, time.Time, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &Claims{
 		Payload: payload,
@@ -25,19 +25,19 @@ func SignJWT(payload interface{}) (string, error) {
 
 	privateKey, err := ioutil.ReadFile("config/key/private.key")
 	if err != nil {
-		return "", err
+		return "", expirationTime, err
 	}
 
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
 	if err != nil {
-		return "", err
+		return "", expirationTime, err
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	tokenString, err := token.SignedString(signKey)
 	if err != nil {
-		return "", err
+		return "", expirationTime, err
 	}
 
-	return tokenString, nil
+	return tokenString, expirationTime, nil
 }

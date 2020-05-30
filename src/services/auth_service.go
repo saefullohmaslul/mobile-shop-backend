@@ -1,11 +1,13 @@
 package services
 
 import (
+	"time"
 	"unsafe"
 
 	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/response"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/token"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db/entity"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/helpers/generator"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,7 +19,10 @@ type AuthService struct {
 
 // AuthReturn is return format for authentication token
 type AuthReturn struct {
-	Token string `json:"token"`
+	AccessToken  string    `json:"access_token"`
+	TokenType    string    `json:"token_type"`
+	ExpiresIn    time.Time `json:"expires_in"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 // NewAuthService is constructor to create auth service instance
@@ -62,7 +67,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 	}
 
 	payload := map[string]interface{}{"username": user.Username}
-	token, err := token.SignJWT(payload)
+	token, expiresIn, err := token.SignJWT(payload)
 	if err != nil {
 		errors = append(errors, response.Error{
 			Flag:    "TOKEN_SIGN_ERROR",
@@ -71,5 +76,12 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	return &AuthReturn{Token: token}
+	refreshToken := generator.GenerateHMAC(payload)
+
+	return &AuthReturn{
+		AccessToken:  token,
+		TokenType:    "bearer",
+		ExpiresIn:    expiresIn,
+		RefreshToken: refreshToken,
+	}
 }

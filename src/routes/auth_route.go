@@ -16,5 +16,6 @@ func AuthRouter(g *gin.RouterGroup) {
 	authController := controllers.NewAuthController(authService)
 	{
 		g.POST("/auth/register", authController.Register)
+		g.POST("/auth/login", authController.Login)
 	}
 }

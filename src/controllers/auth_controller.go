@@ -29,3 +29,13 @@ func (ctl *AuthController) Register(c *gin.Context) {
 
 	response.Success(c, "Success register user", token)
 }
+
+// Login is controller to handle login process
+func (ctl *AuthController) Login(c *gin.Context) {
+	var user entity.User
+	_ = c.ShouldBindBodyWith(&user, binding.JSON)
+
+	token := ctl.Service.Login(user)
+
+	response.Success(c, "Success login user", token)
+}

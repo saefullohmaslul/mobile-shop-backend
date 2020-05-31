@@ -2,8 +2,8 @@ package services
 
 import (
 	"time"
-	"unsafe"
 
+	"github.com/jinzhu/gorm"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/response"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/apps/libraries/token"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db/entity"
@@ -36,7 +36,7 @@ func NewAuthService(userRepository *repositories.UserRepository) *AuthService {
 func (s *AuthService) Register(user entity.User) *AuthReturn {
 	var errors []response.Error
 
-	userExist, _ := s.UserRepository.UserExist(entity.User{Username: user.Username})
+	userExist := checkUserExist(s.UserRepository, user)
 	if (userExist != entity.User{}) {
 		errors = append(errors, response.Error{
 			Flag:    "USER_ALREADY_EXIST",
@@ -45,7 +45,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		response.Conflict("User already exist", errors)
 	}
 
-	hash, err := bcrypt.GenerateFromPassword(*(*[]byte)(unsafe.Pointer(user.Password)), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		errors = append(errors, response.Error{
 			Flag:    "HASH_ERROR",
@@ -56,7 +56,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 
 	if err := s.UserRepository.Register(entity.User{
 		Username: user.Username,
-		Password: (*string)(unsafe.Pointer(&hash)),
+		Password: string(hash),
 		Name:     user.Name,
 	}); err != nil {
 		errors = append(errors, response.Error{
@@ -65,6 +65,54 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		})
 		response.InternalServerError("Internal server error", errors)
 	}
+
+	return generateToken(user)
+}
+
+// Login is service to handle logic of login
+func (s *AuthService) Login(user entity.User) *AuthReturn {
+	var errors []response.Error
+
+	userExist := checkUserExist(s.UserRepository, user)
+	if (userExist == entity.User{}) {
+		errors = append(errors, response.Error{
+			Flag:    "USER_NOT_FOUND",
+			Message: "User with this username not found",
+		})
+		response.NotFound("User not found", errors)
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(userExist.Password), []byte(user.Password))
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "USER_PASSWORD_NOT_MATCH",
+			Message: "Password wrong",
+		})
+		response.Unauthorized("Password not match", errors)
+	}
+
+	return generateToken(user)
+}
+
+func checkUserExist(repository repositories.UserRepository, user entity.User) entity.User {
+	var errors []response.Error
+
+	userExist, err := repository.UserExist(entity.User{Username: user.Username})
+	if gorm.IsRecordNotFoundError(err) {
+		return userExist
+	}
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "USER_CHECK_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+	return userExist
+}
+
+func generateToken(user entity.User) *AuthReturn {
+	var errors []response.Error
 
 	payload := map[string]interface{}{"username": user.Username}
 	token, expiresIn, err := token.SignJWT(payload)

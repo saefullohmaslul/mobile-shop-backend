@@ -26,6 +26,17 @@ func BadRequest(message string, errors []Error) {
 	panic(response)
 }
 
+// Unauthorized is response for unauthorize request
+func Unauthorized(message string, errors []Error) {
+	response := Response{
+		Status:  http.StatusUnauthorized,
+		Message: message,
+		Data:    nil,
+		Errors:  errors,
+	}
+	panic(response)
+}
+
 // Conflict is response for conflict data
 func Conflict(message string, errors []Error) {
 	response := Response{

@@ -15,7 +15,7 @@ type Claims struct {
 
 // SignJWT is method to sign jwt with asymetric
 func SignJWT(payload interface{}) (string, time.Time, error) {
-	expirationTime := time.Now().Add(5 * time.Minute)
+	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		Payload: payload,
 		StandardClaims: jwt.StandardClaims{

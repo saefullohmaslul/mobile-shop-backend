@@ -32,9 +32,9 @@ func (r *UserRepository) UserExist(param entity.User) (entity.User, error) {
 
 	switch param.Email {
 	case nil:
-		err = r.Conn.Select("username").Where(&entity.User{Username: param.Username}).First(&user).Error
+		err = r.Conn.Select("username, password").Where(&entity.User{Username: param.Username}).First(&user).Error
 	default:
-		err = r.Conn.Select("email").Where(&entity.User{Username: param.Email}).First(&user).Error
+		err = r.Conn.Select("email, password").Where(&entity.User{Email: param.Email}).First(&user).Error
 	}
 
 	if err != nil {

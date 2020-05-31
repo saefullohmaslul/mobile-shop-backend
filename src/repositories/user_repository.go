@@ -18,11 +18,13 @@ func NewUserRepository(conn *gorm.DB) *UserRepository {
 }
 
 // Register is method to create user in db
-func (r *UserRepository) Register(user entity.User) error {
-	if err := r.Conn.Create(&user).Error; err != nil {
-		return err
+func (r *UserRepository) Register(user entity.User) (entity.User, error) {
+	userCreated := entity.User{}
+	if err := r.Conn.Create(&user).Scan(&userCreated).Error; err != nil {
+		return userCreated, err
 	}
-	return nil
+
+	return userCreated, nil
 }
 
 // UserExist is method to check existing user by username or email
@@ -32,9 +34,9 @@ func (r *UserRepository) UserExist(param entity.User) (entity.User, error) {
 
 	switch param.Email {
 	case nil:
-		err = r.Conn.Select("username, password").Where(&entity.User{Username: param.Username}).First(&user).Error
+		err = r.Conn.Select("id, username, password").Where(&entity.User{Username: param.Username}).First(&user).Error
 	default:
-		err = r.Conn.Select("email, password").Where(&entity.User{Email: param.Email}).First(&user).Error
+		err = r.Conn.Select("id, email, password").Where(&entity.User{Email: param.Email}).First(&user).Error
 	}
 
 	if err != nil {

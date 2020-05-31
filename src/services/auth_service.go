@@ -9,12 +9,14 @@ import (
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db/entity"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/helpers/generator"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/repositories"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthService is service to handle authentication flow
 type AuthService struct {
-	UserRepository repositories.UserRepository
+	UserRepository            repositories.UserRepository
+	AuthInformationRepository repositories.AuthInformationRepository
 }
 
 // AuthReturn is return format for authentication token
@@ -26,9 +28,10 @@ type AuthReturn struct {
 }
 
 // NewAuthService is constructor to create auth service instance
-func NewAuthService(userRepository *repositories.UserRepository) *AuthService {
+func NewAuthService(userRepository *repositories.UserRepository, authInformationRepository *repositories.AuthInformationRepository) *AuthService {
 	return &AuthService{
-		UserRepository: *userRepository,
+		UserRepository:            *userRepository,
+		AuthInformationRepository: *authInformationRepository,
 	}
 }
 
@@ -54,11 +57,12 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	if err := s.UserRepository.Register(entity.User{
+	userCreated, err := s.UserRepository.Register(entity.User{
 		Username: user.Username,
 		Password: string(hash),
 		Name:     user.Name,
-	}); err != nil {
+	})
+	if err != nil {
 		errors = append(errors, response.Error{
 			Flag:    "USER_REGISTER_ERROR",
 			Message: err.Error(),
@@ -66,7 +70,15 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	return generateToken(user)
+	accessToken, expiresIn, refreshToken := generateToken(user)
+	generateRefreshToken(userCreated.ID, s.AuthInformationRepository, refreshToken, errors)
+
+	return &AuthReturn{
+		AccessToken:  accessToken,
+		TokenType:    "bearer",
+		ExpiresIn:    expiresIn,
+		RefreshToken: refreshToken,
+	}
 }
 
 // Login is service to handle logic of login
@@ -91,7 +103,76 @@ func (s *AuthService) Login(user entity.User) *AuthReturn {
 		response.Unauthorized("Password not match", errors)
 	}
 
-	return generateToken(user)
+	accessToken, expiresIn, refreshToken := generateToken(user)
+	generateRefreshToken(userExist.ID, s.AuthInformationRepository, refreshToken, errors)
+
+	return &AuthReturn{
+		AccessToken:  accessToken,
+		TokenType:    "bearer",
+		ExpiresIn:    expiresIn,
+		RefreshToken: refreshToken,
+	}
+}
+
+func generateRefreshToken(
+	userID uuid.UUID,
+	authInformationRepository repositories.AuthInformationRepository,
+	refreshToken string,
+	errors []response.Error,
+) {
+	authInformation, err := authInformationRepository.GetUserID(entity.AuthInformation{
+		UserID: userID,
+	})
+
+	if gorm.IsRecordNotFoundError(err) {
+		createRefreshToken(userID, authInformationRepository, refreshToken, errors)
+		return
+	}
+
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESH_TOKEN_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+
+	if (authInformation == entity.AuthInformation{}) {
+		createRefreshToken(userID, authInformationRepository, refreshToken, errors)
+		return
+	}
+
+	if err := authInformationRepository.UpdateRefreshToken(
+		authInformation,
+		entity.AuthInformation{
+			RefreshToken: refreshToken,
+			UserID:       userID,
+		}); err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESH_TOKEN_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+}
+
+func createRefreshToken(
+	userID uuid.UUID,
+	authInformationRepository repositories.AuthInformationRepository,
+	refreshToken string,
+	errors []response.Error,
+) {
+	err := authInformationRepository.CreateRefreshToken(entity.AuthInformation{
+		RefreshToken: refreshToken,
+		UserID:       userID,
+	})
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESH_TOKEN_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
 }
 
 func checkUserExist(repository repositories.UserRepository, user entity.User) entity.User {
@@ -111,7 +192,7 @@ func checkUserExist(repository repositories.UserRepository, user entity.User) en
 	return userExist
 }
 
-func generateToken(user entity.User) *AuthReturn {
+func generateToken(user entity.User) (string, time.Time, string) {
 	var errors []response.Error
 
 	payload := map[string]interface{}{"username": user.Username}
@@ -126,10 +207,5 @@ func generateToken(user entity.User) *AuthReturn {
 
 	refreshToken := generator.GenerateHMAC(payload)
 
-	return &AuthReturn{
-		AccessToken:  token,
-		TokenType:    "bearer",
-		ExpiresIn:    expiresIn,
-		RefreshToken: refreshToken,
-	}
+	return token, expiresIn, refreshToken
 }

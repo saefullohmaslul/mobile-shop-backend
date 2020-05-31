@@ -13,7 +13,8 @@ import (
 func AuthRouter(g *gin.RouterGroup) {
 	conn := db.DB{}
 	userRepository := repositories.NewUserRepository(conn.Get())
-	authService := services.NewAuthService(userRepository)
+	authInformationRepository := repositories.NewAuthInformationRepository(conn.Get())
+	authService := services.NewAuthService(userRepository, authInformationRepository)
 	authController := controllers.NewAuthController(authService)
 	{
 		g.POST("/auth/register", validations.Register, authController.Register)

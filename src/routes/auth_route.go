@@ -6,6 +6,7 @@ import (
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/repositories"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/services"
+	"github.com/saefullohmaslul/mobile-shop-backend/src/validations"
 )
 
 // AuthRouter is method to initialize auth route
@@ -15,7 +16,7 @@ func AuthRouter(g *gin.RouterGroup) {
 	authService := services.NewAuthService(userRepository)
 	authController := controllers.NewAuthController(authService)
 	{
-		g.POST("/auth/register", authController.Register)
-		g.POST("/auth/login", authController.Login)
+		g.POST("/auth/register", validations.Register, authController.Register)
+		g.POST("/auth/login", validations.Login, authController.Login)
 	}
 }

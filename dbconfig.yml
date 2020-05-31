@@ -3,9 +3,3 @@ development:
   datasource: host=localhost dbname=shop_db user=postgres password=developer sslmode=disable
   dir: src/db/migrations
   table: migrations
-
-production:
-  dialect: postgres
-  datasource: host=ec2-18-210-214-86.compute-1.amazonaws.com dbname=d6u29t55uekcs7 user=ekzvgfwvzwyyfu password=24c96a9a3b9c32d38d1da0e3b0aac82ab236ca9e4993416f3032b917da60bfd8 sslmode=require
-  dir: src/db/migrations
-  table: migrations

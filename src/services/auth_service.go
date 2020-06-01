@@ -77,9 +77,10 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	accessToken, expiresIn, refreshToken := generator.Token(map[string]interface{}{
-		"username": user.Username,
-	})
+	payload := map[string]interface{}{"username": user.Username}
+	accessToken, expiresIn := generator.Token(payload)
+	refreshToken := generator.GenerateHMAC(payload)
+
 	generator.StoreRefreshToken(userCreated.ID, s.AuthInformationRepository, refreshToken, errors)
 
 	return &AuthReturn{
@@ -112,9 +113,10 @@ func (s *AuthService) Login(user entity.User) *AuthReturn {
 		response.Unauthorized("Password not match", errors)
 	}
 
-	accessToken, expiresIn, refreshToken := generator.Token(map[string]interface{}{
-		"username": user.Username,
-	})
+	payload := map[string]interface{}{"username": user.Username}
+	accessToken, expiresIn := generator.Token(payload)
+	refreshToken := generator.GenerateHMAC(payload)
+
 	generator.StoreRefreshToken(userExist.ID, s.AuthInformationRepository, refreshToken, errors)
 
 	return &AuthReturn{
@@ -157,7 +159,9 @@ func (s *AuthService) RefreshToken(authInformation entity.AuthInformation) *Refr
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	accessToken, expiresIn, _ := generator.Token(userAuthInformation.User)
+	payload := map[string]interface{}{"username": userAuthInformation.User.Username}
+	accessToken, expiresIn := generator.Token(payload)
+
 	return &RefreshTokenReturn{
 		AccessToken: accessToken,
 		ExpiresIn:   expiresIn,

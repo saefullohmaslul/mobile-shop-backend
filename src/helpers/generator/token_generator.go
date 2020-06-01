@@ -8,7 +8,7 @@ import (
 )
 
 // Token is generator for access token and refresh token
-func Token(payload interface{}) (string, time.Time, string) {
+func Token(payload interface{}) (string, time.Time) {
 	var errors []response.Error
 
 	token, expiresIn, err := token.SignJWT(payload)
@@ -20,7 +20,5 @@ func Token(payload interface{}) (string, time.Time, string) {
 		response.InternalServerError("Internal server error", errors)
 	}
 
-	refreshToken := GenerateHMAC(payload)
-
-	return token, expiresIn, refreshToken
+	return token, expiresIn
 }

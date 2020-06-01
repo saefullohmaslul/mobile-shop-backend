@@ -10,6 +10,7 @@ import (
 	"github.com/saefullohmaslul/mobile-shop-backend/src/db/entity"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/helpers/generator"
 	"github.com/saefullohmaslul/mobile-shop-backend/src/repositories"
+	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -81,7 +82,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 	accessToken, expiresIn := generator.Token(payload)
 	refreshToken := generator.GenerateHMAC(payload)
 
-	generator.StoreRefreshToken(userCreated.ID, s.AuthInformationRepository, refreshToken, errors)
+	checkRefreshToken(userCreated.ID, s.AuthInformationRepository, refreshToken, errors)
 
 	return &AuthReturn{
 		AccessToken:  accessToken,
@@ -117,7 +118,7 @@ func (s *AuthService) Login(user entity.User) *AuthReturn {
 	accessToken, expiresIn := generator.Token(payload)
 	refreshToken := generator.GenerateHMAC(payload)
 
-	generator.StoreRefreshToken(userExist.ID, s.AuthInformationRepository, refreshToken, errors)
+	checkRefreshToken(userExist.ID, s.AuthInformationRepository, refreshToken, errors)
 
 	return &AuthReturn{
 		AccessToken:  accessToken,
@@ -184,4 +185,76 @@ func checkUserExist(repository repositories.UserRepository, user entity.User) en
 		response.InternalServerError("Internal server error", errors)
 	}
 	return userExist
+}
+
+// checkRefreshToken is method to check refresh token in database
+func checkRefreshToken(
+	userID uuid.UUID,
+	authInformationRepository repositories.AuthInformationRepository,
+	refreshToken string,
+	errors []response.Error,
+) {
+	authInformation, err := authInformationRepository.GetUserID(entity.AuthInformation{
+		UserID: userID,
+	})
+
+	if gorm.IsRecordNotFoundError(err) {
+		createRefreshToken(userID, authInformationRepository, refreshToken, errors)
+		return
+	}
+
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "AUTHINFO_GET_DB_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+
+	if (authInformation == entity.AuthInformation{}) {
+		createRefreshToken(userID, authInformationRepository, refreshToken, errors)
+		return
+	}
+
+	updateRefreshToken(authInformation, authInformationRepository, refreshToken, errors)
+}
+
+// createRefreshToken in database
+func createRefreshToken(
+	userID uuid.UUID,
+	authInformationRepository repositories.AuthInformationRepository,
+	refreshToken string,
+	errors []response.Error,
+) {
+	err := authInformationRepository.CreateRefreshToken(entity.AuthInformation{
+		RefreshToken: refreshToken,
+		UserID:       userID,
+	})
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESHTOKEN_CREATE_DB_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+}
+
+// updateRefreshToken in database
+func updateRefreshToken(
+	authInformation entity.AuthInformation,
+	authInformationRepository repositories.AuthInformationRepository,
+	refreshToken string,
+	errors []response.Error,
+) {
+	if err := authInformationRepository.UpdateRefreshToken(
+		authInformation,
+		entity.AuthInformation{
+			RefreshToken: refreshToken,
+		}); err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESHTOKEN_UPDATE_DB_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
 }

@@ -41,3 +41,15 @@ func (r *AuthInformationRepository) GetUserID(param entity.AuthInformation) (ent
 	}
 	return authInformation, nil
 }
+
+// GetUser is method to get user_id with refresh token
+func (r *AuthInformationRepository) GetUser(param entity.AuthInformation) (entity.AuthInformation, error) {
+	authInformation := entity.AuthInformation{}
+	if err := r.Conn.Preload("User").
+		Where("refresh_token = ?", param.RefreshToken).
+		First(&authInformation).
+		Error; err != nil {
+		return authInformation, err
+	}
+	return authInformation, nil
+}

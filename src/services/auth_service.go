@@ -127,7 +127,7 @@ func (s *AuthService) Login(user entity.User) *AuthReturn {
 	}
 }
 
-// RefreshToken is
+// RefreshToken is service to handle refresh token logic
 func (s *AuthService) RefreshToken(authInformation entity.AuthInformation) *RefreshTokenReturn {
 	var errors []response.Error
 

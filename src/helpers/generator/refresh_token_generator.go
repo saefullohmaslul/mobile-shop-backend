@@ -26,7 +26,7 @@ func StoreRefreshToken(
 
 	if err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "REFRESH_TOKEN_ERROR",
+			Flag:    "AUTHINFO_GET_DB_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)
@@ -43,7 +43,7 @@ func StoreRefreshToken(
 			RefreshToken: refreshToken,
 		}); err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "REFRESH_TOKEN_ERROR",
+			Flag:    "REFRESHTOKEN_UPDATE_DB_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)
@@ -62,7 +62,7 @@ func createRefreshToken(
 	})
 	if err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "REFRESH_TOKEN_ERROR",
+			Flag:    "REFRESHTOKEN_CREATE_DB_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)

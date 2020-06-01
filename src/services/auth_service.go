@@ -58,7 +58,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "HASH_ERROR",
+			Flag:    "BCRYPT_HASH_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)
@@ -71,7 +71,7 @@ func (s *AuthService) Register(user entity.User) *AuthReturn {
 	})
 	if err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "USER_REGISTER_ERROR",
+			Flag:    "USER_REGISTER_DB_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)
@@ -174,7 +174,7 @@ func checkUserExist(repository repositories.UserRepository, user entity.User) en
 	}
 	if err != nil {
 		errors = append(errors, response.Error{
-			Flag:    "USER_CHECK_ERROR",
+			Flag:    "USER_CHECK_DB_ERROR",
 			Message: err.Error(),
 		})
 		response.InternalServerError("Internal server error", errors)

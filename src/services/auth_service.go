@@ -1,6 +1,8 @@
 package services
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -23,6 +25,13 @@ type AuthReturn struct {
 	TokenType    string    `json:"token_type"`
 	ExpiresIn    time.Time `json:"expires_in"`
 	RefreshToken string    `json:"refresh_token"`
+}
+
+// RefreshTokenReturn is return format for refresh token endpoint
+type RefreshTokenReturn struct {
+	AccessToken string    `json:"access_token"`
+	TokenType   string    `json:"token_type"`
+	ExpiresIn   time.Time `json:"expires_in"`
 }
 
 // NewAuthService is constructor to create auth service instance
@@ -113,6 +122,46 @@ func (s *AuthService) Login(user entity.User) *AuthReturn {
 		TokenType:    "bearer",
 		ExpiresIn:    expiresIn,
 		RefreshToken: refreshToken,
+	}
+}
+
+// RefreshToken is
+func (s *AuthService) RefreshToken(authInformation entity.AuthInformation) *RefreshTokenReturn {
+	var errors []response.Error
+
+	refreshToken := strings.Split(authInformation.RefreshToken, ".")
+	expiredTime, _ := strconv.ParseInt(refreshToken[1], 10, 64)
+
+	if expiredTime < time.Now().Unix() {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESH_TOKEN_EXPIRED",
+			Message: "Refresh token expired, please login again",
+		})
+		response.Unauthorized("Refresh token expired", errors)
+	}
+
+	userAuthInformation, err := s.AuthInformationRepository.GetUser(authInformation)
+	if gorm.IsRecordNotFoundError(err) {
+		errors = append(errors, response.Error{
+			Flag:    "USER_NOT_FOUND",
+			Message: "User with this refresh token not found",
+		})
+		response.NotFound("User not found", errors)
+	}
+
+	if err != nil {
+		errors = append(errors, response.Error{
+			Flag:    "REFRESH_TOKEN_DB_ERROR",
+			Message: err.Error(),
+		})
+		response.InternalServerError("Internal server error", errors)
+	}
+
+	accessToken, expiresIn, _ := generator.Token(userAuthInformation.User)
+	return &RefreshTokenReturn{
+		AccessToken: accessToken,
+		ExpiresIn:   expiresIn,
+		TokenType:   "bearer",
 	}
 }
 

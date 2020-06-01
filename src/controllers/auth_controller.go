@@ -39,3 +39,13 @@ func (ctl *AuthController) Login(c *gin.Context) {
 
 	response.Success(c, "Success login user", token)
 }
+
+// RefreshToken is controller to handle generated access token
+func (ctl *AuthController) RefreshToken(c *gin.Context) {
+	var authInformation entity.AuthInformation
+	_ = c.ShouldBindBodyWith(&authInformation, binding.JSON)
+
+	token := ctl.Service.RefreshToken(authInformation)
+
+	response.Success(c, "Success generate access token", token)
+}

@@ -14,4 +14,5 @@ type Order struct {
 	ProductCategoryID uuid.UUID `gorm:"type:uuid;unique" json:"product_category_id"`
 	Amount            int16     `gorm:"type:integer" json:"amount"`
 	SubTotal          float64   `gorm:"type:float" json:"sub_total"`
+	TransactionID     uuid.UUID `gorm:"type:uuid;unique" json:"transaction_id"`
 }

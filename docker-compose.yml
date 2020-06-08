@@ -1,0 +1,23 @@
+version: '3.7'
+
+services: 
+  db:
+    image: postgres:11
+    container_name: mobile_shop_db
+    volumes:
+      - mobile_shop:/var/libs/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=developer
+      - POSTGRES_DB=shop_db
+      - POSTGRES_PORT=5432
+    ports:
+      - 5432:5432
+    networks:
+      - net
+
+volumes: 
+  mobile_shop:
+
+networks:
+  net:
